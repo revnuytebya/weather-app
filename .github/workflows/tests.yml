@@ -23,5 +23,8 @@ jobs:
       - name: Check code with Ruff
         run: ruff check .
 
+      - name: Check code formatting
+        run: ruff format --check .
+
       - name: Run tests
         run: python -m unittest -v
