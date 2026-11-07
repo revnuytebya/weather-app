@@ -65,7 +65,7 @@
 Для запуска автоматических тестов выполните:
 
 ```bash
-python test_main.py
+python -m unittest -v
 ```
 
 Тесты написаны с использованием `unittest` и `unittest.mock`.
