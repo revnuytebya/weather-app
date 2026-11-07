@@ -1,19 +1,21 @@
-# Python
+
+# Python cache
 __pycache__/
 *.py[cod]
-*.pyo
 
-# Virtual environment
-venv/
+# Virtual environments
 .venv/
-env/
-
-# IDE
-.vscode/
+venv/
 
 # Environment variables
 .env
 
-# System files
-.DS_Store
-Thumbs.db
+# IDE
+.vscode/
+
+# Ruff cache
+.ruff_cache/
+
+# Test and coverage cache
+.coverage
+htmlcov/
