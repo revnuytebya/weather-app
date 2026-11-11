@@ -1,5 +1,6 @@
 import unittest
 from datetime import datetime
+from typing import cast
 from unittest.mock import patch
 
 from main import (
@@ -21,7 +22,6 @@ class TestIsValidCoordinates(unittest.TestCase):
             (-90, -180),
             (0, 0),
         ]
-
         for latitude, longitude in valid_coordinates:
             with self.subTest(latitude=latitude, longitude=longitude):
                 self.assertTrue(is_valid_coordinates(latitude, longitude))
@@ -42,7 +42,6 @@ class TestIsValidCoordinates(unittest.TestCase):
             (float("inf"), 37.62),
             (55.75, float("-inf")),
         ]
-
         for latitude, longitude in invalid_coordinates:
             with self.subTest(latitude=latitude, longitude=longitude):
                 self.assertFalse(is_valid_coordinates(latitude, longitude))
@@ -61,6 +60,7 @@ class TestGetWeather(unittest.TestCase):
             }
             mock_response.raise_for_status.return_value = None
             result = get_weather(55.75, 37.62)
+            result = cast(tuple, result)
             self.assertEqual(result[0], 10.5)
             self.assertEqual(result[1], 15.2)
             self.assertEqual(
@@ -78,27 +78,19 @@ class TestGetWeather(unittest.TestCase):
             )
 
     def test_timeout(self):
-        with (
-            patch("main.requests.get") as mock_get,
-            patch("builtins.print") as mock_print,
-        ):
+        with patch("main.requests.get") as mock_get:
             mock_get.side_effect = requests.exceptions.Timeout
-            result = get_weather(55.75, 37.62)
-            self.assertIsNone(result)
+            with self.assertRaises(requests.exceptions.Timeout):
+                get_weather(55.75, 37.62)
             mock_get.assert_called_once()
-            mock_print.assert_called_once_with("Превышено время ожидания")
 
     def test_request_error(self):
-        with (
-            patch("main.requests.get") as mock_get,
-            patch("builtins.print") as mock_print,
-        ):
+        with patch("main.requests.get") as mock_get:
             mock_response = mock_get.return_value
             mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError
-            result = get_weather(55.75, 37.62)
-            self.assertIsNone(result)
+            with self.assertRaises(requests.exceptions.HTTPError):
+                get_weather(55.75, 37.62)
             mock_get.assert_called_once()
-            mock_print.assert_called_once_with("Ошибка запроса")
 
     def test_missing_current_data(self):
         with patch("main.requests.get") as mock_get:
@@ -117,8 +109,8 @@ class TestGetWeather(unittest.TestCase):
                     "wind_speed_10m": 15.2,
                 }
             }
-            result = get_weather(55.75, 37.62)
-            self.assertIsNone(result)
+            with self.assertRaises(ValueError):
+                get_weather(55.75, 37.62)
 
     def test_missing_weather_fields(self):
         with patch("main.requests.get") as mock_get:
@@ -245,15 +237,15 @@ class TestGetCoordinates(unittest.TestCase):
     def test_timeout(self):
         with patch("main.requests.get") as mock_get:
             mock_get.side_effect = requests.exceptions.Timeout
-            result = get_coordinates("Москва")
-            self.assertIsNone(result)
+            with self.assertRaises(requests.exceptions.Timeout):
+                get_coordinates("Москва")
 
     def test_request_error(self):
         with patch("main.requests.get") as mock_get:
             mock_response = mock_get.return_value
             mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError
-            result = get_coordinates("Москва")
-            self.assertIsNone(result)
+            with self.assertRaises(requests.exceptions.HTTPError):
+                get_coordinates("Москва")
 
 
 class TestMain(unittest.TestCase):
@@ -314,7 +306,10 @@ class TestMain(unittest.TestCase):
                 "Время обновления: 07.11.2026 | 12:00",
                 sep="\n",
             )
-            mock_print.assert_any_call("Прогноз погоды на 7 дней:")
+            mock_print.assert_any_call(
+                "\nПрогноз погоды на 7 дней:\n",
+                "-" * 20,
+            )
             mock_print.assert_any_call("2026-11-08: от 0.4°C до 3.8°C | Дождь")
             mock_print.assert_any_call("2026-11-09: от 2.7°C до 4.6°C | Облачно")
 
@@ -394,14 +389,14 @@ class TestGetForecast(unittest.TestCase):
         with patch("main.requests.get") as mock_get:
             mock_response = mock_get.return_value
             mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError
-            result = get_forecast(55.75, 37.62)
-            self.assertIsNone(result)
+            with self.assertRaises(requests.exceptions.HTTPError):
+                get_forecast(55.75, 37.62)
 
     def test_connection_error(self):
         with patch("main.requests.get") as mock_get:
             mock_get.side_effect = requests.exceptions.ConnectionError
-            result = get_forecast(55.75, 37.62)
-            self.assertIsNone(result)
+            with self.assertRaises(requests.exceptions.ConnectionError):
+                get_forecast(55.75, 37.62)
 
     def test_invalid_json(self):
         with patch("main.requests.get") as mock_get:
@@ -409,8 +404,8 @@ class TestGetForecast(unittest.TestCase):
             mock_response.json.side_effect = requests.exceptions.JSONDecodeError(
                 "Invalid JSON", "", 0
             )
-            result = get_forecast(55.75, 37.62)
-            self.assertIsNone(result)
+            with self.assertRaises(requests.exceptions.JSONDecodeError):
+                get_forecast(55.75, 37.62)
 
     def test_missing_required_fields(self):
         with patch("main.requests.get") as mock_get:
