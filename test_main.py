@@ -4,6 +4,7 @@ from typing import cast
 from unittest.mock import patch
 
 from main import (
+    InvalidAPIResponse,
     get_coordinates,
     get_forecast,
     get_weather,
@@ -245,6 +246,39 @@ class TestGetCoordinates(unittest.TestCase):
             mock_response = mock_get.return_value
             mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError
             with self.assertRaises(requests.exceptions.HTTPError):
+                get_coordinates("Москва")
+
+    def test_incomplete_api_response(self):
+        with patch("main.requests.get") as mock_get:
+            mock_response = mock_get.return_value
+            mock_response.json.return_value = {
+                "results": [
+                    {
+                        "name": "Москва",
+                        "latitude": 55.7558,
+                        # longitude отсутствует
+                    }
+                ]
+            }
+            with self.assertRaises(InvalidAPIResponse):
+                get_coordinates("Москва")
+
+    def test_invalid_name_type(self):
+        with patch("main.requests.get") as mock_get:
+            mock_response = mock_get.return_value
+            mock_response.json.return_value = {
+                "results": [{"name": 123, "latitude": 55.7558, "longitude": 37.6173}]
+            }
+            with self.assertRaises(InvalidAPIResponse):
+                get_coordinates("Москва")
+
+    def test_invalid_coordinates(self):
+        with patch("main.requests.get") as mock_get:
+            mock_response = mock_get.return_value
+            mock_response.json.return_value = {
+                "results": [{"name": "Москва", "latitude": 999, "longitude": 37.6173}]
+            }
+            with self.assertRaises(InvalidAPIResponse):
                 get_coordinates("Москва")
 
 

@@ -4,6 +4,10 @@ from datetime import datetime
 import requests
 
 
+class InvalidAPIResponse(Exception):
+    pass
+
+
 def is_valid_coordinates(latitude, longitude):
     if latitude is None or longitude is None:
         return False
@@ -22,11 +26,14 @@ def get_coordinates(city):
     response.raise_for_status()
     data = response.json()
     if data.get("results"):
-        return (
-            data["results"][0]["latitude"],
-            data["results"][0]["longitude"],
-            data["results"][0]["name"],
-        )
+        result = data["results"][0]
+        if all(key in result for key in ("latitude", "longitude", "name")):
+            if is_valid_coordinates(result["latitude"], result["longitude"]):
+                if isinstance(result["name"], str) and result["name"].strip():
+                    return result["latitude"], result["longitude"], result["name"]
+                raise InvalidAPIResponse("API вернул неправильное название города")
+            raise InvalidAPIResponse("API вернул неправильные данные")
+        raise InvalidAPIResponse("API вернул неполные данные")
     return None
 
 
@@ -182,6 +189,8 @@ def main():
                     print("Не удалось получить погоду")
             else:
                 print("Город не найден")
+        except InvalidAPIResponse as error:
+            print(f"Ошибка данных: {error}")
         except requests.exceptions.JSONDecodeError:
             print("Сервер вернул некорректный JSON")
         except requests.RequestException as error:
