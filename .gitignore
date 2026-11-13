@@ -1,7 +1,7 @@
-
-# Python cache
+# Python
 __pycache__/
 *.py[cod]
+*.egg-info/
 
 # Virtual environments
 .venv/
@@ -9,13 +9,21 @@ venv/
 
 # Environment variables
 .env
+.env.*
 
 # IDE
 .vscode/
+.idea/
 
-# Ruff cache
+# Ruff
 .ruff_cache/
 
-# Test and coverage cache
+# Testing and coverage
+.pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
+
+# Build files
+build/
+dist/
