@@ -40,6 +40,8 @@ class TestIsValidCoordinates(unittest.TestCase):
             (float("nan"), 37.62),
             (float("inf"), 37.62),
             (55.75, float("-inf")),
+            (10**1000, 37.62),
+            (55.75, 10**1000),
         ]
         for latitude, longitude in invalid_coordinates:
             with self.subTest(latitude=latitude, longitude=longitude):
@@ -665,6 +667,8 @@ class TestGetForecast(unittest.TestCase):
         for latitude, longitude in [
             ("abc", 37.62),
             (55.75, "abc"),
+            (10**1000, 37.62),
+            (55.75, 10**1000),
         ]:
             with (
                 self.subTest(latitude=latitude, longitude=longitude),

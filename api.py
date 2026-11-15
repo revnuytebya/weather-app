@@ -3,25 +3,25 @@ from datetime import datetime
 
 import requests
 
+FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
+GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
+
 
 class InvalidAPIResponse(Exception):
     pass
 
 
 def is_valid_coordinates(latitude, longitude):
-    if latitude is None or longitude is None:
-        return False
     if type(latitude) not in (int, float) or type(longitude) not in (int, float):
         return False
-    if not math.isfinite(latitude) or not math.isfinite(longitude):
-        return False
+
     return -90 <= latitude <= 90 and -180 <= longitude <= 180
 
 
 def get_coordinates(city):
     params = {"name": city, "count": 1, "language": "ru", "format": "json"}
     response = requests.get(
-        "https://geocoding-api.open-meteo.com/v1/search",
+        GEOCODING_URL,
         params=params,
         timeout=5,
     )
@@ -37,7 +37,7 @@ def get_coordinates(city):
         raise InvalidAPIResponse("API вернул неправильный формат списка городов")
 
     if results:
-        result = data["results"][0]
+        result = results[0]
 
         if not isinstance(result, dict):
             raise InvalidAPIResponse("API вернул неправильный формат данных о городе")
@@ -66,7 +66,7 @@ def get_weather(latitude, longitude):
     }
 
     weather_response = requests.get(
-        "https://api.open-meteo.com/v1/forecast",
+        FORECAST_URL,
         params=weather_params,
         timeout=5,
     )
@@ -117,7 +117,7 @@ def get_forecast(latitude, longitude):
     }
 
     forecast_response = requests.get(
-        "https://api.open-meteo.com/v1/forecast",
+        FORECAST_URL,
         params=forecast_params,
         timeout=5,
     )
@@ -135,22 +135,22 @@ def get_forecast(latitude, longitude):
     if not isinstance(daily, dict):
         raise InvalidAPIResponse("API вернул неправильную структуру прогноза")
 
-    required_fields = [
+    required_fields = (
         "time",
         "temperature_2m_min",
         "temperature_2m_max",
         "weather_code",
-    ]
+    )
 
     if not all(field in daily for field in required_fields):
         return None
 
     for field in required_fields:
-        if daily[field] is None or daily[field] == []:
-            return None
-
         if not isinstance(daily[field], list):
             raise InvalidAPIResponse(f"API вернул неправильный формат поля {field}")
+
+        if not daily[field]:
+            return None
 
     for field in ("temperature_2m_min", "temperature_2m_max"):
         for value in daily[field]:
